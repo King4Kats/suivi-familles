@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Flavien Auvray
+  SPDX-License-Identifier: AGPL-3.0-or-later
+
+  Carte d'identité de l'appli pour Nextcloud : nom, version, licence, compatibilité, menu.
+  ⚠ Monter <version> à chaque livraison : Nextcloud ne lance les migrations (et ne vide le cache
+  du navigateur, via « ?v=<version> ») que si la version augmente.
+  L'ordre des balises est imposé par le schéma info.xsd du magasin d'applis Nextcloud.
+-->
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>suivi_familles</id>
+    <name>Familles</name>
+    <summary>Le dossier des familles accompagnées : suivi, rendez-vous, objectifs, accès cloisonné</summary>
+    <description><![CDATA[
+Pour les associations et structures qui **accompagnent des familles** (prévention santé,
+parentalité, accompagnement social…) : un dossier par famille, partagé avec les bons
+intervenants, et seulement eux.
+
+* **Une fiche par famille** : situation, membres (soignants, école, points de vigilance),
+  objectifs, coordonnées, consentement.
+* **Le suivi** : chaque intervention datée, avec son type et sa durée ; des notes privées.
+* **À faire** : actions et rendez-vous confiés à une personne de l'équipe, qui est notifiée.
+* **Accès cloisonné** : chaque intervenant ne voit que les familles qui lui sont confiées ;
+  la direction (administrateurs et groupe « direction ») voit tout.
+* **Journal** : qui a consulté, imprimé ou modifié quoi.
+* **Facile à prendre en main** : un « ? » à côté de chaque notion, un guide intégré.
+
+⚠ L'appli peut contenir des données de santé : vérifiez le RGPD et l'hébergement (HDS en France)
+avant d'y mettre de vraies données.
+    ]]></description>
+    <version>0.2.2</version>
+    <licence>agpl</licence>
+    <author mail="flavienauvray@proton.me" homepage="https://github.com/King4Kats">Flavien Auvray</author>
+    <namespace>SuiviFamilles</namespace>
+    <documentation>
+        <user>https://github.com/King4Kats/suivi-familles/blob/main/docs/01-demarrer.md</user>
+        <admin>https://github.com/King4Kats/suivi-familles/blob/main/docs/03-droits-et-donnees-sensibles.md</admin>
+        <developer>https://github.com/King4Kats/suivi-familles/blob/main/docs/05-developper.md</developer>
+    </documentation>
+    <category>organization</category>
+    <website>https://github.com/King4Kats/suivi-familles</website>
+    <bugs>https://github.com/King4Kats/suivi-familles/issues</bugs>
+    <repository type="git">https://github.com/King4Kats/suivi-familles.git</repository>
+    <screenshot>https://raw.githubusercontent.com/King4Kats/suivi-familles/main/docs/img/fiche.png</screenshot>
+    <dependencies>
+        <php min-version="8.1"/>
+        <nextcloud min-version="30" max-version="34"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <name>Familles</name>
+            <route>suivi_familles.page.index</route>
+            <icon>app.svg</icon>
+            <order>80</order>
+        </navigation>
+    </navigations>
+</info>

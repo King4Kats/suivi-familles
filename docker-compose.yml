@@ -1,0 +1,29 @@
+# Démo de l'appli « Familles » : Nextcloud 34 + l'appli, avec des comptes et une famille fictifs.
+#
+#   docker compose up --build        (le premier lancement prend 1 à 3 minutes)
+#
+#   Appli : http://localhost:8150/apps/suivi_familles/
+#   Comptes : voir README.md. Repartir de zéro : docker compose down -v
+services:
+  nextcloud:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: suivi-familles-demo:latest
+    container_name: familles-nc
+    ports:
+      - "8150:80"
+    environment:
+      # SQLite : une base dans un simple fichier, rien à installer. Parfait pour une démo ;
+      # en production on prend PostgreSQL ou MariaDB.
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: familles2026
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost 127.0.0.1
+    volumes:
+      # Tout Nextcloud (code, config, données) dans un volume Docker nommé.
+      - nc_data:/var/www/html
+    restart: unless-stopped
+
+volumes:
+  nc_data:
