@@ -15,6 +15,7 @@ un dossier par famille, partagé avec les bons intervenants, et seulement eux.
 - **Accès cloisonné** : chaque intervenant (psychologue, médecin, éducateur…) ne voit **que** les
   familles qui lui sont confiées. Une famille qu'on ne peut pas voir n'existe pas pour nous.
 - **Journal** : qui a consulté, imprimé ou modifié quoi, et quand.
+- **Champs sensibles chiffrés** dans la base (situation, soignants, points de vigilance, notes).
 - **Facile à prendre en main** : un « ? » à côté de chaque notion, un guide intégré.
 
 | Accueil de chacun | Liste des familles |

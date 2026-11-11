@@ -67,3 +67,7 @@ for _ in $(seq 1 30); do curl -fs "http://localhost:$PORT/status.php" >/dev/null
 
 echo "→ Test des droits, compte par compte…"
 PYTHONIOENCODING=utf-8 "$PYTHON" "$(chemin_hote "$RACINE/tests/tester-droits.py")" "http://localhost:$PORT"
+
+echo "→ Chiffrement : lecture de la base brute…"
+docker cp "$(chemin_hote "$RACINE/tests/verifier-chiffrement.php")" "$CONTENEUR:/tmp/verifier-chiffrement.php" >/dev/null
+docker exec -u www-data "$CONTENEUR" php /tmp/verifier-chiffrement.php

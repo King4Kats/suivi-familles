@@ -13,6 +13,8 @@ namespace OCA\SuiviFamilles\Service;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 // IDBConnection : la connexion à la base, fournie par Nextcloud.
 use OCP\IDBConnection;
+// ICrypto : le chiffrement de Nextcloud (AES-256 + signature HMAC), avec la clé secrète du serveur.
+use OCP\Security\ICrypto;
 
 /**
  * ACCÈS À LA BASE (les 7 tables sf_*). Uniquement des lectures / écritures, AUCUNE règle :
@@ -28,6 +30,11 @@ use OCP\IDBConnection;
  * Les noms de tables et de colonnes, eux, sont toujours écrits dans le code (jamais reçus du navigateur).
  *
  * Nextcloud ajoute tout seul le préfixe « oc_ » : on écrit 'sf_familles', la table s'appelle oc_sf_familles.
+ *
+ * CHIFFREMENT : les champs les plus sensibles (voir CHIFFRES) sont chiffrés AVANT d'être écrits en
+ * base, et déchiffrés à la lecture. Une copie de la base volée seule est donc illisible pour eux.
+ * La clé est le « secret » de config/config.php : sans lui, ces champs sont perdus. Il est inclus
+ * dans les sauvegardes du Nextcloud (qui doivent donc être chiffrées, elles aussi).
  */
 class Store {
     // Colonnes modifiables par formulaire (tout le reste est géré par le serveur).
@@ -36,8 +43,49 @@ class Store {
     public const CHAMPS_FAMILLE = ['nom', 'adresse', 'commune', 'territoire', 'telephone', 'email', 'situation', 'date_entree', 'orientation', 'besoins', 'consentement'];
     public const CHAMPS_MEMBRE = ['prenom', 'nom', 'lien', 'date_naissance', 'telephone', 'email', 'etablissement', 'medecin_traitant', 'psychologue', 'autres_suivis', 'vigilance', 'remarques', 'ordre'];
 
-    // Injection de dépendances + promotion de propriété : Nextcloud fournit la connexion, rangée dans $this->db.
-    public function __construct(private IDBConnection $db) {
+    // Les champs chiffrés, par table. Choisis parce qu'ils peuvent contenir des informations de santé
+    // ou très personnelles. Les autres (nom, commune, dates…) restent en clair : on doit pouvoir trier
+    // et chercher dessus.
+    public const CHIFFRES = [
+        'sf_familles' => ['situation'],
+        'sf_membres' => ['medecin_traitant', 'psychologue', 'autres_suivis', 'vigilance', 'remarques'],
+        'sf_suivis' => ['texte'],
+    ];
+    // Marque posée devant une valeur chiffrée : on reconnaît ainsi ce qui l'est déjà (et la version
+    // du format, si un jour on le change).
+    public const MARQUE = 'sfc1:';
+
+    // Injection de dépendances + promotion de propriété : Nextcloud fournit la connexion (rangée dans
+    // $this->db) et l'outil de chiffrement ($this->crypto).
+    public function __construct(private IDBConnection $db, private ICrypto $crypto) {
+    }
+
+    /** Chiffre un texte pour la base. Rien à chiffrer si la valeur est vide (null ou '').
+     *  Déjà chiffré (commence par la marque) : on ne le chiffre pas une 2e fois. */
+    public function chiffrer(?string $v): ?string {
+        if ($v === null || $v === '' || str_starts_with($v, self::MARQUE)) { return $v; }
+        return self::MARQUE . $this->crypto->encrypt($v);
+    }
+
+    /** Déchiffre une valeur lue en base. Une valeur sans marque (écrite avant le chiffrement) est
+     *  rendue telle quelle. Si le déchiffrement échoue (clé changée, donnée abîmée), on ne plante
+     *  pas toute la fiche : on affiche un message à la place. */
+    public function dechiffrer(mixed $v): mixed {
+        if (!is_string($v) || !str_starts_with($v, self::MARQUE)) { return $v; }
+        try {
+            return $this->crypto->decrypt(substr($v, strlen(self::MARQUE)));
+        } catch (\Exception $e) {
+            return '[illisible : la clé de chiffrement du serveur a changé]';
+        }
+    }
+
+    /** Chiffre, dans un tableau [colonne => valeur], les colonnes sensibles de $table. */
+    private function chiffrerLigne(string $table, array $valeurs): array {
+        foreach (self::CHIFFRES[$table] ?? [] as $col) {
+            // array_key_exists et pas isset : une valeur null doit rester null, sans erreur.
+            if (array_key_exists($col, $valeurs)) { $valeurs[$col] = $this->chiffrer($valeurs[$col]); }
+        }
+        return $valeurs;
     }
 
     // ---------- outils ----------
@@ -57,6 +105,9 @@ class Store {
             // Un entier NULL reste null (ex. membre_id d'une note sans membre).
             if (in_array($k, $entiers, true)) { $v = $v === null ? null : (int)$v; }
             elseif (in_array($k, $booleens, true)) { $v = (bool)$v; }
+            // Une valeur chiffrée (marque sfc1:) est déchiffrée ici : le reste de l'appli ne voit
+            // jamais que du texte en clair.
+            else { $v = $this->dechiffrer($v); }
             $out[self::camel($k)] = $v;
         }
         return $out;
@@ -72,6 +123,7 @@ class Store {
     /** INSERT INTO $table (col1, col2…) VALUES (…). $valeurs = [colonne => valeur].
      *  Renvoie l'id de la nouvelle ligne (colonne auto-incrémentée). */
     private function inserer(string $table, array $valeurs): int {
+        $valeurs = $this->chiffrerLigne($table, $valeurs);   // champs sensibles chiffrés avant l'écriture
         $qb = $this->db->getQueryBuilder();
         $qb->insert($table);
         // Chaque valeur passe par un paramètre lié, avec son type.
@@ -87,6 +139,7 @@ class Store {
     private function mettreAJour(string $table, int $id, array $valeurs): void {
         // Un UPDATE sans aucun SET serait une requête invalide : on sort tout de suite.
         if ($valeurs === []) { return; }
+        $valeurs = $this->chiffrerLigne($table, $valeurs);   // champs sensibles chiffrés avant l'écriture
         $qb = $this->db->getQueryBuilder();
         $qb->update($table);
         foreach ($valeurs as $col => $v) {

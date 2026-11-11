@@ -49,6 +49,36 @@ Toutes dans `app/lib/Service/FamillesService.php` :
 - Le ou la **référent·e** fait partie de l'équipe ; retirer son accès lui retire le rôle.
 - Les **dates** sont vérifiées (une naissance ou un consentement ne peut pas être dans le futur).
 
+## Le chiffrement des champs sensibles
+
+Depuis la version 0.3, les champs qui peuvent contenir des informations de santé sont **chiffrés
+dans la base** :
+
+| Table | Champs chiffrés |
+|---|---|
+| familles | situation |
+| membres | médecin traitant, psychologue, autres suivis, points de vigilance, remarques |
+| interventions | texte de la note |
+
+```
+  formulaire ──▶ FamillesService ──▶ Store::chiffrer() ──▶ base : « sfc1:Kq9…(illisible) »
+                                                                          │
+  écran ◀─────── FamillesService ◀── Store::dechiffrer() ◀────────────────┘
+```
+
+- Chiffrement **AES-256 avec signature** (outil `ICrypto` de Nextcloud). La clé est le `secret`
+  du fichier `config/config.php` du Nextcloud.
+- Une **copie de la base seule** (vol, fuite d'une sauvegarde de base) ne permet pas de lire ces champs.
+- Ça ne protège **pas** contre quelqu'un qui contrôle le serveur entier (il a la base ET la clé),
+  ni contre un compte légitime : c'est le rôle du cloisonnement et du journal.
+- ⚠ **Ne jamais perdre ni changer le `secret`** de `config.php` : sans lui, ces champs sont
+  illisibles. Il fait partie de toute sauvegarde complète de Nextcloud, qui doit donc être
+  chiffrée elle aussi.
+- Les noms, coordonnées et dates restent en clair : il faut pouvoir trier et chercher dessus.
+
+En passant en 0.3, la migration chiffre automatiquement les valeurs déjà enregistrées.
+Le test `tests/verifier-chiffrement.php` lit la base brute et vérifie qu'aucun de ces champs n'y est en clair.
+
 ## Le journal
 
 Chaque consultation (au plus une par quart d'heure et par personne), impression et

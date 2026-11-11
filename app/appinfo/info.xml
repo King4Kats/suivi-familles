@@ -25,12 +25,13 @@ intervenants, et seulement eux.
 * **Accès cloisonné** : chaque intervenant ne voit que les familles qui lui sont confiées ;
   la direction (administrateurs et groupe « direction ») voit tout.
 * **Journal** : qui a consulté, imprimé ou modifié quoi.
+* **Champs sensibles chiffrés** dans la base (situation, soignants, points de vigilance, notes).
 * **Facile à prendre en main** : un « ? » à côté de chaque notion, un guide intégré.
 
 ⚠ L'appli peut contenir des données de santé : vérifiez le RGPD et l'hébergement (HDS en France)
 avant d'y mettre de vraies données.
     ]]></description>
-    <version>0.2.2</version>
+    <version>0.3.0</version>
     <licence>agpl</licence>
     <author mail="flavienauvray@proton.me" homepage="https://github.com/King4Kats">Flavien Auvray</author>
     <namespace>SuiviFamilles</namespace>

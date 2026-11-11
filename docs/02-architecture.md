@@ -58,7 +58,7 @@ app/
 │   │   ├── FamillesService.php     ★ LES RÈGLES : droits, validations, journal, notifications
 │   │   ├── Tableaux.php            l'écran d'accueil de chacun
 │   │   ├── Reglages.php            les listes de choix des formulaires
-│   │   ├── Store.php               la base de données, et rien d'autre
+│   │   ├── Store.php               la base de données (et le chiffrement des champs sensibles)
 │   │   └── Interdit / Invalide / NonTrouve.php   erreurs → codes HTTP 403 / 400 / 404
 │   ├── Notification/Notifier.php   le texte des notifications (cloche Nextcloud)
 │   └── Migration/                  création et évolution des tables
